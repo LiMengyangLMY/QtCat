@@ -1,0 +1,19 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="pet/idle/idle.png">assets/idle/idle.png</file>
+        <file alias="pet/rotate/frame_01.png">assets/rotate/frame_01.png</file>
+        <file alias="pet/rotate/frame_02.png">assets/rotate/frame_02.png</file>
+        <file alias="pet/rotate/frame_03.png">assets/rotate/frame_03.png</file>
+        <file alias="pet/rotate/frame_04.png">assets/rotate/frame_04.png</file>
+        <file alias="pet/rotate/frame_05.png">assets/rotate/frame_05.png</file>
+        <file alias="pet/rotate/frame_06.png">assets/rotate/frame_06.png</file>
+        <file alias="pet/rotate/frame_07.png">assets/rotate/frame_07.png</file>
+        <file alias="pet/rotate/frame_08.png">assets/rotate/frame_08.png</file>
+        <file alias="pet/rotate/frame_09.png">assets/rotate/frame_09.png</file>
+        <file alias="pet/rotate/frame_10.png">assets/rotate/frame_10.png</file>
+        <file alias="pet/rotate/frame_11.png">assets/rotate/frame_11.png</file>
+        <file alias="pet/rotate/frame_12.png">assets/rotate/frame_12.png</file>
+        <file alias="pet/rotate/frame_13.png">assets/rotate/frame_13.png</file>
+        <file alias="pet/rotate/frame_14.png">assets/rotate/frame_14.png</file>
+    </qresource>
+</RCC>
