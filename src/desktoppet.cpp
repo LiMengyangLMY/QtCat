@@ -1,62 +1,52 @@
 #include "desktoppet.h"
 
+#include <QEvent>
 #include <QGuiApplication>
+#include <QMouseEvent>
 #include <QPixmap>
 #include <QScreen>
-#include <QString>
-#include <QStringList>
-#include <QVBoxLayout>
 
 namespace
 {
 constexpr int kPetSize = 256;
-constexpr int kWindowWidth = 360;
-constexpr int kWindowHeight = 420;
 constexpr int kAnimationFps = 15;
+constexpr int kScreenMargin = 48;
 }
 
 DesktopPet::DesktopPet(QWidget *parent)
     : QWidget(parent)
-    , m_imageLabel(new QLabel(this))
-    , m_statusLabel(new QLabel(this))
+    , m_petLabel(new QLabel(this))
     , m_currentFrameIndex(0)
 {
-    setWindowTitle(QStringLiteral("QtCatPet Demo"));
-    setFixedSize(kWindowWidth, kWindowHeight);
-    setStyleSheet(QStringLiteral(
-        "QWidget { background-color: #f6f1e8; }"
-        "QLabel#titleLabel { color: #3b3128; font-size: 22px; font-weight: 700; }"
-        "QLabel#imageLabel { background-color: #ffffff; border: 2px solid #d7c7b2; }"
-        "QLabel#statusLabel { color: #6c5c4f; font-size: 14px; }"));
+    setWindowTitle(QStringLiteral("QtCatPet"));
+    setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | Qt::WindowStaysOnTopHint);
+    setAttribute(Qt::WA_TranslucentBackground);
+    setAttribute(Qt::WA_NoSystemBackground, true);
+    setMouseTracking(true);
+    setFixedSize(kPetSize, kPetSize);
 
-    auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(24, 24, 24, 24);
-    layout->setSpacing(18);
-
-    auto *titleLabel = new QLabel(QStringLiteral("QtCatPet Demo"), this);
-    titleLabel->setObjectName(QStringLiteral("titleLabel"));
-    titleLabel->setAlignment(Qt::AlignCenter);
-
-    m_imageLabel->setObjectName(QStringLiteral("imageLabel"));
-    m_imageLabel->setFixedSize(kPetSize, kPetSize);
-    m_imageLabel->setAlignment(Qt::AlignCenter);
-
-    m_statusLabel->setObjectName(QStringLiteral("statusLabel"));
-    m_statusLabel->setAlignment(Qt::AlignCenter);
-    m_statusLabel->setWordWrap(true);
-
-    layout->addWidget(titleLabel);
-    layout->addWidget(m_imageLabel, 0, Qt::AlignCenter);
-    layout->addWidget(m_statusLabel);
+    m_petLabel->setGeometry(rect());
+    m_petLabel->setAlignment(Qt::AlignCenter);
+    m_petLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
 
     m_animationTimer.setInterval(1000 / kAnimationFps);
     connect(&m_animationTimer, &QTimer::timeout, this, &DesktopPet::showNextFrame);
 
     loadFrames();
     showIdleFrame();
-    updateStatus();
     centerOnScreen();
+}
+
+void DesktopPet::enterEvent(QEvent *event)
+{
+    QWidget::enterEvent(event);
     startAnimation();
+}
+
+void DesktopPet::leaveEvent(QEvent *event)
+{
+    QWidget::leaveEvent(event);
+    stopAnimation();
 }
 
 void DesktopPet::loadFrames()
@@ -88,12 +78,19 @@ void DesktopPet::startAnimation()
     }
 }
 
+void DesktopPet::stopAnimation()
+{
+    m_animationTimer.stop();
+    m_currentFrameIndex = 0;
+    showIdleFrame();
+}
+
 void DesktopPet::showIdleFrame()
 {
     if (!m_idleFrame.isNull()) {
-        m_imageLabel->setPixmap(m_idleFrame);
+        m_petLabel->setPixmap(m_idleFrame);
     } else {
-        m_imageLabel->setText(QStringLiteral("静止图加载失败"));
+        m_petLabel->setText(QStringLiteral("idle 加载失败"));
     }
 }
 
@@ -103,17 +100,8 @@ void DesktopPet::showNextFrame()
         return;
     }
 
-    m_imageLabel->setPixmap(m_animationFrames.at(m_currentFrameIndex));
+    m_petLabel->setPixmap(m_animationFrames.at(m_currentFrameIndex));
     m_currentFrameIndex = (m_currentFrameIndex + 1) % m_animationFrames.size();
-}
-
-void DesktopPet::updateStatus()
-{
-    const QString idleStatus = m_idleFrame.isNull()
-        ? QStringLiteral("静止图：加载失败")
-        : QStringLiteral("静止图：已加载 %1x%2").arg(m_idleFrame.width()).arg(m_idleFrame.height());
-    const QString frameStatus = QStringLiteral("旋转帧：%1 张").arg(m_animationFrames.size());
-    m_statusLabel->setText(idleStatus + QStringLiteral("\n") + frameStatus);
 }
 
 void DesktopPet::centerOnScreen()
@@ -124,6 +112,28 @@ void DesktopPet::centerOnScreen()
     }
 
     const QRect available = screen->availableGeometry();
-    move(available.center().x() - width() / 2,
-         available.center().y() - height() / 2);
+    move(available.right() - width() - kScreenMargin,
+         available.bottom() - height() - kScreenMargin);
+}
+
+void DesktopPet::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        m_dragPosition = event->globalPos() - frameGeometry().topLeft();
+        event->accept();
+        return;
+    }
+
+    QWidget::mousePressEvent(event);
+}
+
+void DesktopPet::mouseMoveEvent(QMouseEvent *event)
+{
+    if (event->buttons() & Qt::LeftButton) {
+        move(event->globalPos() - m_dragPosition);
+        event->accept();
+        return;
+    }
+
+    QWidget::mouseMoveEvent(event);
 }

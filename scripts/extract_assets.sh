@@ -19,7 +19,7 @@ mkdir -p "${TMP_IDLE_DIR}" "${TMP_ROTATE_DIR}"
 rm -f "${IDLE_DIR}"/*.png "${ROTATE_DIR}"/*.png
 
 ffmpeg -y -i "${IDLE_VIDEO}" \
-  -vf "crop=640:600:660:226" \
+  -vf "crop=850:760:480:170" \
   -update 1 \
   -frames:v 1 \
   "${TMP_IDLE_DIR}/idle_raw.png"
