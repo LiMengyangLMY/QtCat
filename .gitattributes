@@ -1,0 +1,11 @@
+# 统一跨平台换行符，消除 Windows 下 LF/CRLF 警告
+* text=auto eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.png binary
+*.ico binary
+*.mp4 binary
+*.epub binary
+*.mobi binary
+*.azw3 binary

@@ -6,7 +6,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${ROOT_DIR}/build"
 DIST_DIR="${ROOT_DIR}/dist"
 
-"${ROOT_DIR}/scripts/extract_assets.sh"
+# 设置 SKIP_ASSETS=1 可跳过素材提取，直接使用 resources/assets 中已有的 PNG
+if [[ "${SKIP_ASSETS:-0}" != "1" ]]; then
+  "${ROOT_DIR}/scripts/extract_assets.sh"
+fi
 
 mkdir -p "${BUILD_DIR}" "${DIST_DIR}"
 

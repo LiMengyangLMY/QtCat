@@ -1,0 +1,21 @@
+# 构建产物
+build/
+dist/
+*.zip
+*.lnk
+
+# 本地工具链（由 scripts/install_tools.ps1 安装，约 1GB）
+third_party/
+
+# 日志与临时文件
+*.log
+tmp_*
+*.user
+.qmake.stash
+__pycache__/
+*.pyc
+
+# IDE
+.vs/
+.vscode/
+.idea/

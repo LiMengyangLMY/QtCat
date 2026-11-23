@@ -1,4 +1,4 @@
-QT += widgets
+QT += widgets gui-private
 
 CONFIG += c++17
 TEMPLATE = app
@@ -6,10 +6,20 @@ TARGET = QtCatPet
 
 SOURCES += \
     src/main.cpp \
-    src/desktoppet.cpp
+    src/desktoppet.cpp \
+    src/novelmanager.cpp \
+    src/bookdialog.cpp \
+    src/ebookparser.cpp
 
 HEADERS += \
-    src/desktoppet.h
+    src/desktoppet.h \
+    src/novelmanager.h \
+    src/bookdialog.h \
+    src/ebookparser.h
 
 RESOURCES += \
-    resources.qrc
+    resources/resources.qrc
+
+win32 {
+    RC_FILE += resources/app.rc
+}

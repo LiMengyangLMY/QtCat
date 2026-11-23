@@ -3,10 +3,10 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-IDLE_VIDEO="${ROOT_DIR}/静止1.mp4"
-ROTATE_VIDEO="${ROOT_DIR}/旋转1.mp4"
-IDLE_DIR="${ROOT_DIR}/assets/idle"
-ROTATE_DIR="${ROOT_DIR}/assets/rotate"
+IDLE_VIDEO="${ROOT_DIR}/media/静止1.mp4"
+ROTATE_VIDEO="${ROOT_DIR}/media/旋转1.mp4"
+IDLE_DIR="${ROOT_DIR}/resources/assets/idle"
+ROTATE_DIR="${ROOT_DIR}/resources/assets/rotate"
 MATTE_SCRIPT="${ROOT_DIR}/scripts/remove_black_background.py"
 TMP_DIR="$(mktemp -d)"
 TMP_IDLE_DIR="${TMP_DIR}/idle"
@@ -27,7 +27,7 @@ ffmpeg -y -i "${IDLE_VIDEO}" \
 python3 "${MATTE_SCRIPT}" "${TMP_IDLE_DIR}/idle_raw.png" "${IDLE_DIR}/idle.png" --size 256
 
 ffmpeg -y -i "${ROTATE_VIDEO}" \
-  -vf "fps=15,crop=880:480:514:226" \
+  -vf "fps=15,crop=960:600:480:140" \
   "${TMP_ROTATE_DIR}/frame_%02d.png"
 
 shopt -s nullglob
