@@ -1,6 +1,9 @@
 # QtCat
 
-一个基于 Qt Widgets 的桌面宠物 demo。
+一个基于 Qt Widgets 的桌面宠物 demo，内置多格式“摸鱼看小说”功能。
+
+> **下载即用（普通用户）**：请直接切换至本仓库的 **`release`** 分支 → 点击 **Code → Download ZIP** 解压 → 双击 `启动桌宠.bat` 或 `创建桌面快捷方式.bat` 即可运行，无需配置开发环境。  
+> **开发与测试**：当前 **`main`** 分支仅包含源码、素材与构建脚本。
 
 ## 技术栈
 
@@ -55,6 +58,7 @@ QtCat/
 | `scripts/extract_assets.ps1` / `.sh` | 用 ffmpeg 从 `media/` 视频提取帧，调用 `remove_black_background.py` 抠图，输出到 `resources/assets/` |
 | `scripts/remove_black_background.py` | 去除与边缘相连的黑色背景并缩放到指定尺寸 |
 | `scripts/build.ps1` / `.sh` | 提取素材 → qmake → make → 拷贝到 `dist/`（Windows 还会执行 windeployqt） |
+| `scripts/publish_release_branch.ps1` | 将 `dist/`（排除个人书库）打包为单提交孤儿分支 `release`，附带相对路径启动与桌面快捷方式脚本 |
 
 ## 构建与运行
 
