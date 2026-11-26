@@ -1,5 +1,6 @@
 #include "desktoppet.h"
 #include "bookdialog.h"
+#include "catrunnerwidget.h"
 #include "ebookparser.h"
 #include "novelmanager.h"
 
@@ -41,10 +42,13 @@ constexpr int kAutoSaveIntervalMs = 5 * 60 * 1000; // 每 5 分钟自动更新 C
 
 DesktopPet::DesktopPet(QWidget *parent)
     : QWidget(parent)
+    , m_hasSavedPetPos(false)
+    , m_inGameMode(false)
     , m_petLabel(new QLabel(this))
     , m_novelText(new QPlainTextEdit(this))
     , m_prevLineBtn(new QPushButton(QStringLiteral("▲"), this))
     , m_nextLineBtn(new QPushButton(QStringLiteral("▼"), this))
+    , m_runnerWidget(nullptr)
     , m_novelManager(new NovelManager(this))
     , m_currentFrameIndex(0)
     , m_isAutoScrolling(false)
@@ -130,6 +134,12 @@ DesktopPet::DesktopPet(QWidget *parent)
     loadFrames();
     showIdleFrame();
 
+    // 初始化小猫跑酷小游戏面板 (460x180，复用原图与旋转帧)
+    m_runnerWidget = new CatRunnerWidget(m_idleFrame, m_animationFrames, this);
+    m_runnerWidget->setGeometry(0, 0, CatRunnerWidget::kGameWidth, CatRunnerWidget::kGameHeight);
+    m_runnerWidget->setVisible(false);
+    connect(m_runnerWidget, &CatRunnerWidget::bossKeyRequested, this, &DesktopPet::exitGameToIdlePet);
+
     // 5. 初始化窗口几何与样式
     updateNovelStyle();
     updateWindowGeometry();
@@ -156,6 +166,26 @@ DesktopPet::~DesktopPet()
 
 void DesktopPet::updateWindowGeometry()
 {
+    if (m_inGameMode && m_runnerWidget) {
+        if (m_isAutoScrolling) {
+            stopAutoScroll();
+        }
+        stopAnimation();
+        m_petLabel->setVisible(false);
+        m_novelText->setVisible(false);
+        m_prevLineBtn->setVisible(false);
+        m_nextLineBtn->setVisible(false);
+        m_runnerWidget->setVisible(true);
+        setFixedSize(CatRunnerWidget::kGameWidth, CatRunnerWidget::kGameHeight);
+        update();
+        return;
+    }
+
+    if (m_runnerWidget) {
+        m_runnerWidget->setVisible(false);
+    }
+    m_petLabel->setVisible(true);
+
     bool visible = m_novelManager->isNovelVisible();
     if (!visible && m_isAutoScrolling) {
         stopAutoScroll();
@@ -170,6 +200,72 @@ void DesktopPet::updateWindowGeometry()
         setFixedSize(kPetWidth, kPetHeight);
     }
     update();
+}
+
+void DesktopPet::enterGameMode(bool forceNewRun)
+{
+    if (!m_runnerWidget) {
+        return;
+    }
+
+    if (!m_inGameMode) {
+        m_savedPetPos = pos();
+        m_hasSavedPetPos = true;
+    }
+
+    stopAutoScroll();
+    stopAnimation();
+    m_novelManager->flushBookshelf(false);
+
+    m_inGameMode = true;
+    updateWindowGeometry();
+
+    // 防止在屏幕右侧展开 460px 时超出屏幕右边界
+    if (QScreen *screen = QGuiApplication::screenAt(frameGeometry().center())) {
+        const QRect avail = screen->availableGeometry();
+        int nx = qBound(avail.left() + 8, x(), avail.right() - width() - 8);
+        int ny = qBound(avail.top() + 8, y(), avail.bottom() - height() - 8);
+        move(nx, ny);
+    }
+
+    if (forceNewRun) {
+        m_runnerWidget->resetNewRun(false);
+    }
+    m_runnerWidget->activateGame();
+    activateWindow();
+}
+
+void DesktopPet::exitGameToIdlePet()
+{
+    if (!m_inGameMode) {
+        return;
+    }
+
+    if (m_runnerWidget) {
+        m_runnerWidget->freezeAndPause();
+    }
+    m_inGameMode = false;
+    // 老板键：收起跑道并回到 256x256 纯静止大猫形态
+    m_novelManager->setNovelVisible(false);
+    updateWindowGeometry();
+
+    if (m_hasSavedPetPos) {
+        move(m_savedPetPos);
+    }
+}
+
+void DesktopPet::exitGameToNovel()
+{
+    if (m_runnerWidget) {
+        m_runnerWidget->freezeAndPause();
+    }
+    m_inGameMode = false;
+    m_novelManager->setNovelVisible(true);
+    updateWindowGeometry();
+
+    if (m_hasSavedPetPos) {
+        move(m_savedPetPos);
+    }
 }
 
 void DesktopPet::updateNovelStyle()
@@ -453,17 +549,26 @@ void DesktopPet::onScrollChanged(int value)
 void DesktopPet::enterEvent(QEvent *event)
 {
     QWidget::enterEvent(event);
-    startAnimation();
+    if (!m_inGameMode) {
+        startAnimation();
+    }
 }
 
 void DesktopPet::leaveEvent(QEvent *event)
 {
     QWidget::leaveEvent(event);
-    stopAnimation();
+    if (!m_inGameMode) {
+        stopAnimation();
+    }
 }
 
 void DesktopPet::mousePressEvent(QMouseEvent *event)
 {
+    if (m_inGameMode) {
+        QWidget::mousePressEvent(event);
+        return;
+    }
+
     // 1. 鼠标中键：一键启停 1.5s/行 自动播放
     if (event->button() == Qt::MiddleButton) {
         toggleAutoScroll();
@@ -483,6 +588,11 @@ void DesktopPet::mousePressEvent(QMouseEvent *event)
 
 void DesktopPet::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_inGameMode) {
+        QWidget::mouseMoveEvent(event);
+        return;
+    }
+
     // 1. 窗口拖拽
     if (event->buttons() & Qt::LeftButton) {
         move(event->globalPos() - m_dragPosition);
@@ -503,8 +613,10 @@ void DesktopPet::mouseMoveEvent(QMouseEvent *event)
 void DesktopPet::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        // 双击老板键：一键隐蔽/恢复小说文本框
-        toggleNovelVisibility();
+        if (!m_inGameMode) {
+            // 双击老板键（看小说模式）：一键隐蔽/恢复小说文本框
+            toggleNovelVisibility();
+        }
         event->accept();
         return;
     }
@@ -513,6 +625,11 @@ void DesktopPet::mouseDoubleClickEvent(QMouseEvent *event)
 
 void DesktopPet::wheelEvent(QWheelEvent *event)
 {
+    if (m_inGameMode) {
+        event->ignore();
+        return;
+    }
+
     if (m_novelManager->isNovelVisible()) {
         int deltaY = event->angleDelta().y();
         if (deltaY != 0) {
@@ -541,6 +658,16 @@ void DesktopPet::wheelEvent(QWheelEvent *event)
 
 void DesktopPet::keyPressEvent(QKeyEvent *event)
 {
+    if (m_inGameMode) {
+        if (event->key() == Qt::Key_Escape) {
+            exitGameToIdlePet();
+            event->accept();
+            return;
+        }
+        QWidget::keyPressEvent(event);
+        return;
+    }
+
     // Esc 快捷老板键：隐藏文本框并暂停自动播放
     if (event->key() == Qt::Key_Escape) {
         stopAutoScroll();
@@ -622,6 +749,47 @@ void DesktopPet::contextMenuEvent(QContextMenuEvent *event)
         "QMenu::item:selected { background-color: #5865F2; color: #FFFFFF; }"
         "QMenu::separator { height: 1px; background-color: #40444B; margin: 4px 8px; }"
     ));
+
+    // 若当前处于跑酷小游戏模式，展示精简专属游戏右键菜单
+    if (m_inGameMode) {
+        QAction *bossAct = menu.addAction(QStringLiteral("🐾  冻结存档并退回静止大猫 (Esc / 鼠标中键)"));
+        connect(bossAct, &QAction::triggered, this, &DesktopPet::exitGameToIdlePet);
+
+        QAction *restartAct = menu.addAction(QStringLiteral("🔄  重新开始新的一局"));
+        connect(restartAct, &QAction::triggered, this, [this]() {
+            if (m_runnerWidget) {
+                m_runnerWidget->resetNewRun(true);
+            }
+        });
+
+        QAction *toNovelAct = menu.addAction(QStringLiteral("📖  暂存游戏并切回摸鱼看小说"));
+        connect(toNovelAct, &QAction::triggered, this, &DesktopPet::exitGameToNovel);
+
+        menu.addSeparator();
+        QAction *quitAct = menu.addAction(QStringLiteral("❌  退出"));
+        connect(quitAct, &QAction::triggered, qApp, &QCoreApplication::quit);
+        menu.exec(event->globalPos());
+        return;
+    }
+
+    // 0. 小猫跑酷小游戏入口（若有冻结局提示继续）
+    if (m_runnerWidget && m_runnerWidget->hasFrozenRun()) {
+        QAction *resumeGameAct = menu.addAction(QStringLiteral("🎮  继续小猫跑酷 (已冻结存档)"));
+        connect(resumeGameAct, &QAction::triggered, this, [this]() {
+            enterGameMode(false);
+        });
+        QAction *newGameAct = menu.addAction(QStringLiteral("🔄  新开一局小猫跑酷"));
+        connect(newGameAct, &QAction::triggered, this, [this]() {
+            enterGameMode(true);
+        });
+    } else {
+        QAction *gameAct = menu.addAction(QStringLiteral("🎮  小猫跑酷小游戏"));
+        connect(gameAct, &QAction::triggered, this, [this]() {
+            enterGameMode(false);
+        });
+    }
+
+    menu.addSeparator();
 
     // 1. 导入小说 / 摸鱼书架
     QAction *bookAction = menu.addAction(QStringLiteral("📖  导入电子书 / 摸鱼书架..."));

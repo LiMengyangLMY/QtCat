@@ -9,13 +9,15 @@ SOURCES += \
     src/desktoppet.cpp \
     src/novelmanager.cpp \
     src/bookdialog.cpp \
-    src/ebookparser.cpp
+    src/ebookparser.cpp \
+    src/catrunnerwidget.cpp
 
 HEADERS += \
     src/desktoppet.h \
     src/novelmanager.h \
     src/bookdialog.h \
-    src/ebookparser.h
+    src/ebookparser.h \
+    src/catrunnerwidget.h
 
 RESOURCES += \
     resources/resources.qrc

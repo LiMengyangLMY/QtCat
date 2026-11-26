@@ -18,6 +18,7 @@ class QDropEvent;
 class QPlainTextEdit;
 class QPushButton;
 class NovelManager;
+class CatRunnerWidget;
 
 class DesktopPet : public QWidget
 {
@@ -50,6 +51,9 @@ private slots:
     void stepLineUp();
     void stepLineDown();
     void jumpToProgressPercent();
+    void enterGameMode(bool forceNewRun = false);
+    void exitGameToIdlePet();
+    void exitGameToNovel();
 
 private:
     void loadFrames();
@@ -64,11 +68,15 @@ private:
     void scrollByLines(int delta);
 
     QPoint m_dragPosition;
+    QPoint m_savedPetPos;
+    bool m_hasSavedPetPos;
+    bool m_inGameMode;
 
     QLabel *m_petLabel;
     QPlainTextEdit *m_novelText;
     QPushButton *m_prevLineBtn;
     QPushButton *m_nextLineBtn;
+    CatRunnerWidget *m_runnerWidget;
     NovelManager *m_novelManager;
 
     QPixmap m_idleFrame;

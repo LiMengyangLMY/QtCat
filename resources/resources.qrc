@@ -15,5 +15,9 @@
         <file alias="pet/rotate/frame_12.png">assets/rotate/frame_12.png</file>
         <file alias="pet/rotate/frame_13.png">assets/rotate/frame_13.png</file>
         <file alias="pet/rotate/frame_14.png">assets/rotate/frame_14.png</file>
+        <file alias="game/cactus.png">assets/game/cactus.png</file>
+        <file alias="game/cactus_cluster.png">assets/game/cactus_cluster.png</file>
+        <file alias="game/cucumber.png">assets/game/cucumber.png</file>
+        <file alias="game/blue_fish.png">assets/game/blue_fish.png</file>
     </qresource>
 </RCC>
