@@ -1,0 +1,4 @@
+dist/books/
+dist/bookshelf.csv
+dist/bookshelf.csv.tmp
+*.log
