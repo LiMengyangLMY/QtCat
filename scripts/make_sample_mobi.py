@@ -1,7 +1,8 @@
 import struct
 import os
 
-mobi_path = os.path.join("docs", "sample_novel.mobi")
+mobi_path = os.path.join("docs", "samples", "sample_novel.mobi")
+os.makedirs(os.path.dirname(mobi_path), exist_ok=True)
 
 text_content = """<html><body>
 <h1>第三章 灵界传闻 (MOBI 体验篇)</h1>

@@ -20,7 +20,27 @@ constexpr double kGravity = 0.50;
 constexpr double kJumpVel1 = -9.4;    // 一段跳初速度
 constexpr double kJumpVel2 = -8.5;    // 二段跳初速度
 constexpr int kMaxFishCharge = 5;     // 5 条蓝色鱼干充满无敌
-constexpr int kInvincibleDurationTicks = 188; // ~3.0 秒 (60fps)
+constexpr int kInvincibleDurationTicks = 188;    // ~3.0 秒总无敌时长 (188 * 16ms ≈ 3.0s)
+constexpr int kInvincibleSlowdownTicks = 63;     // 最后 ~1.0 秒恢复常速阶段 (63 * 16ms ≈ 1.0s)
+constexpr int kInvincibleEaseTicks = 20;         // 进入最后 1 秒时平滑降速过渡帧数 (~0.32s)
+constexpr double kInvincibleDashSpeedMul = 1.55; // 无敌冲刺最高速度倍率
+
+double invincibleSpeedMultiplier(int remainingTicks)
+{
+    if (remainingTicks <= 0) {
+        return 1.0;
+    }
+    if (remainingTicks > kInvincibleSlowdownTicks) {
+        return kInvincibleDashSpeedMul;
+    }
+    const int steadyNormalTicks = kInvincibleSlowdownTicks - kInvincibleEaseTicks;
+    if (remainingTicks <= steadyNormalTicks) {
+        return 1.0;
+    }
+    const double t = static_cast<double>(remainingTicks - steadyNormalTicks) / kInvincibleEaseTicks;
+    const double smooth = t * t * (3.0 - 2.0 * t);
+    return 1.0 + (kInvincibleDashSpeedMul - 1.0) * smooth;
+}
 }
 
 CatRunnerWidget::CatRunnerWidget(const QPixmap &idleCat,
@@ -260,17 +280,18 @@ void CatRunnerWidget::onGameTick()
 
     ++m_tickCount;
 
-    const bool invincible = (m_invincibleTicks > 0);
+    const int remainingInvincible = m_invincibleTicks;
+    const bool invincible = (remainingInvincible > 0);
+    const double speedMul = invincibleSpeedMultiplier(remainingInvincible);
     if (m_invincibleTicks > 0) {
         --m_invincibleTicks;
     }
 
-    const double speedMul = invincible ? 1.55 : 1.0;
     const double speed = currentBaseSpeed() * speedMul;
     m_groundScroll += speed;
 
-    // 距离计分
-    if (m_tickCount % (invincible ? 4 : 6) == 0) {
+    // 距离计分（随实际加速状态同步频率）
+    if (m_tickCount % ((speedMul > 1.2) ? 4 : 6) == 0) {
         ++m_score;
         if (m_score > m_highScore) {
             m_highScore = m_score;

@@ -1,7 +1,8 @@
 import zipfile
 import os
 
-epub_path = os.path.join("docs", "sample_novel.epub")
+epub_path = os.path.join("docs", "samples", "sample_novel.epub")
+os.makedirs(os.path.dirname(epub_path), exist_ok=True)
 
 with zipfile.ZipFile(epub_path, "w", zipfile.ZIP_DEFLATED) as z:
     # 1. mimetype (uncompressed)
